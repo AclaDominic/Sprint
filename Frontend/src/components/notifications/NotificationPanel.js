@@ -17,14 +17,14 @@ const NotificationPanel = () => {
           }
         );
         const newData = response.data;
-        const newIds = newData
-          .filter(
-            (item) => !activities.some((existing) => existing.id === item.id)
-          )
-          .map((item) => item.id);
+        setActivities((prev) => {
+          const newIds = newData
+            .filter((item) => !prev.some((existing) => existing.id === item.id))
+            .map((item) => item.id);
 
-        setActivities(newData);
-        setHighlightedIds(newIds);
+          setHighlightedIds(newIds);
+          return newData;
+        });
       } catch (err) {
         setError("Failed to load notifications.");
       }
@@ -45,11 +45,15 @@ const NotificationPanel = () => {
         {activities.length === 0 ? (
           <p>No recent activity.</p>
         ) : (
-            <ul className="list-group">
+          <ul className="list-group">
             {activities.map((activity) => (
               <li
                 key={activity.id}
-                className={`list-group-item ${highlightedIds.includes(activity.id) ? "bg-success bg-opacity-10" : ""}`}
+                className={`list-group-item ${
+                  highlightedIds.includes(activity.id)
+                    ? "bg-success bg-opacity-10"
+                    : ""
+                }`}
               >
                 <div>
                   <strong>
@@ -62,7 +66,7 @@ const NotificationPanel = () => {
                 </div>
               </li>
             ))}
-          </ul>          
+          </ul>
         )}
       </div>
     </div>
