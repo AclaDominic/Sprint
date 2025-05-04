@@ -105,6 +105,9 @@ const TaskDetail = () => {
       navigate(`/projects/${task.project_id}/tasks`);
     } catch (err) {
       setError("Failed to delete task");
+      setTimeout(() => {
+        navigate(-1);
+      }, 3000);
     }
   };
   const handleCommentSubmit = async (e) => {
@@ -124,6 +127,9 @@ const TaskDetail = () => {
       setNewComment("");
     } catch (err) {
       setCommentsError("Failed to post comment.");
+      setTimeout(() => {
+        navigate(-1);
+      }, 3000);
     }
   };
 
@@ -151,6 +157,9 @@ const TaskDetail = () => {
       e.target.reset(); // Reset the form
     } catch (err) {
       setFileError("Failed to upload file.");
+      setTimeout(() => {
+        navigate(-1);
+      }, 3000);
     }
   };
 
@@ -175,6 +184,9 @@ const TaskDetail = () => {
     } catch (error) {
       console.error("Download failed", error);
       alert("Download failed. You may not have permission.");
+      setTimeout(() => {
+        navigate(-1);
+      }, 3000);
     }
   };
 

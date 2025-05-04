@@ -23,8 +23,7 @@ class Task extends Model
         'priority',
         'start_time',
         'due_time',
-        'time_spent',
-        'cost'
+        'time_spent'
     ];
 
     protected $casts = [

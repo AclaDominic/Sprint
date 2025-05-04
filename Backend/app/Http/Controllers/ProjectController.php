@@ -7,11 +7,22 @@ use Illuminate\Http\Request;
 
 class ProjectController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $projects = Project::with('user')->get();
+        $user = $request->user();
+
+        $projects = Project::with('members')
+            ->where('user_id', $user->id) // owner
+            ->orWhereHas('members', function ($query) use ($user) {
+                $query->where('user_id', $user->id); // member
+            })
+            ->latest()
+            ->take($request->input('limit', 5))
+            ->get();
+
         return response()->json(['projects' => $projects]);
     }
+
 
     public function store(Request $request)
     {
@@ -54,7 +65,7 @@ class ProjectController extends Controller
         if ($project->user_id !== auth()->id()) {
             return response()->json(['error' => 'Only the project owner can perform this action.'], 403);
         }
-        
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -73,7 +84,12 @@ class ProjectController extends Controller
 
     public function destroy(Project $project)
     {
+        if ($project->user_id !== auth()->id()) {
+            return response()->json(['error' => 'Only the project owner can delete this project.'], 403);
+        }
+
         $project->delete();
         return response()->json(['message' => 'Project deleted successfully']);
     }
+
 }

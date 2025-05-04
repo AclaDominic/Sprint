@@ -16,7 +16,6 @@ const TaskForm = () => {
     priority: "medium",
     start_time: "",
     due_time: "",
-    cost: "",
   });
 
   const [users, setUsers] = useState([]);
@@ -50,7 +49,6 @@ const TaskForm = () => {
             priority: task.priority,
             start_time: task.start_time ? task.start_time.slice(0, 16) : "",
             due_time: task.due_time ? task.due_time.slice(0, 16) : "",
-            cost: task.cost || "",
           });
   
           resolvedProjectId = task.project_id; // Use actual project_id from task
@@ -275,22 +273,6 @@ const TaskForm = () => {
               name="due_time"
               value={formData.due_time}
               onChange={handleChange}
-            />
-          </div>
-
-          <div className="col">
-            <label htmlFor="cost" className="form-label">
-              Cost
-            </label>
-            <input
-              type="number"
-              className="form-control"
-              id="cost"
-              name="cost"
-              value={formData.cost}
-              onChange={handleChange}
-              min="0"
-              step="0.01"
             />
           </div>
         </div>

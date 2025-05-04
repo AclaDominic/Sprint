@@ -85,7 +85,7 @@ const ProjectForm = () => {
       if (err.response && err.response.data && err.response.data.message) {
         setError(`Failed to save project: ${err.response.data.message}`);
       } else {
-        setError("Failed to save project");
+        setError("You dont have permission to perform this action.");
       }
       console.error("Project save error:", err);
     }

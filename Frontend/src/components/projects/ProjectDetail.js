@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import ProjectGanttChart from "./ProjectGanttChart";
+import RiskIssuePanel from "./RiskIssuePanel";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -11,6 +12,7 @@ const ProjectDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actualCost, setActualCost] = useState(0);
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     const fetchProjectDetails = async () => {
@@ -28,8 +30,26 @@ const ProjectDetail = () => {
           { headers }
         );
 
+        const expendituresResponse = await axios.get(
+          `http://localhost:8000/api/projects/${id}/expenditures`,
+          { headers }
+        );
+
+        const expenditures = expendituresResponse.data;
+        const totalCost = expenditures.reduce(
+          (sum, exp) => sum + Number(exp.amount),
+          0
+        );
+
+        const userResponse = await axios.get("http://localhost:8000/api/user", {
+          headers,
+        });
+        const currentUserId = userResponse.data.id;
+
         setProject(projectResponse.data.project);
-        setActualCost(projectResponse.data.actual_cost);
+        setIsOwner(projectResponse.data.project.user_id === currentUserId);
+        setProject(projectResponse.data.project);
+        setActualCost(totalCost);
         setTasks(tasksResponse.data.tasks);
         setLoading(false);
       } catch (err) {
@@ -58,20 +78,36 @@ const ProjectDetail = () => {
 
       navigate("/projects");
     } catch (err) {
-      setError("Failed to delete project");
+      const message =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Failed to delete project";
+      setError(message);
+
+      setTimeout(() => {
+        navigate(-1);
+      }, 3000);
     }
   };
 
-  if (loading) return (
-    <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
-      <div className="text-center">
-        <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
-          <span className="visually-hidden">Loading...</span>
+  if (loading)
+    return (
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ height: "100vh" }}
+      >
+        <div className="text-center">
+          <div
+            className="spinner-border text-primary"
+            role="status"
+            style={{ width: "3rem", height: "3rem" }}
+          >
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <div className="mt-2">Loading ProjectDetail...</div>
         </div>
-        <div className="mt-2">Loading ProjectDetail...</div>
       </div>
-    </div>
-  );
+    );
   if (error) return <div className="alert alert-danger">{error}</div>;
   if (!project) return <div>Project not found</div>;
 
@@ -97,12 +133,19 @@ const ProjectDetail = () => {
           <Link to="/projects" className="btn btn-secondary me-2">
             Back to Projects
           </Link>
-          <Link to={`/projects/${id}/edit`} className="btn btn-warning me-2">
-            Edit Project
-          </Link>
-          <button onClick={handleDeleteProject} className="btn btn-danger">
-            Delete Project
-          </button>
+          {isOwner && (
+            <>
+              <Link
+                to={`/projects/${id}/edit`}
+                className="btn btn-warning me-2"
+              >
+                Edit Project
+              </Link>
+              <button onClick={handleDeleteProject} className="btn btn-danger">
+                Delete Project
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -174,6 +217,10 @@ const ProjectDetail = () => {
                 {Number(project.budget || 0).toFixed(2)}
                 <br />
                 <br />
+                <strong>Remaining Budget:</strong> ₱
+                {Number(project.budget - actualCost).toFixed(2)}
+                <br />
+                <br />
                 <strong>Actual Cost:</strong> ₱
                 {Number(actualCost || 0).toFixed(2)}
                 <br />
@@ -214,6 +261,28 @@ const ProjectDetail = () => {
                   </div>
                 </div>
               </div>
+              {isOwner && (
+                <div className="d-flex flex-column gap-2 mt-3">
+                  <Link
+                    to={`/projects/${id}/expenditures`}
+                    className="btn btn-outline-primary btn-sm"
+                  >
+                    View Expenditure Records
+                  </Link>
+                  <Link
+                    to={`/projects/${id}/expenditures/add`}
+                    className="btn btn-outline-success btn-sm"
+                  >
+                    Record New Expenditure
+                  </Link>
+                  <Link
+                    to={`/projects/${project.id}/report`}
+                    className="btn btn-outline-dark btn-sm"
+                  >
+                    View Report
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -228,7 +297,7 @@ const ProjectDetail = () => {
 
       <div className="card">
         <div className="card-header d-flex justify-content-between align-items-center">
-          <h5 className="mb-0">Tasks</h5>
+          <h5 className="mb-4">Tasks</h5>
           <Link to={`/projects/${id}/tasks`} className="btn btn-primary btn-sm">
             Manage Tasks
           </Link>
@@ -287,6 +356,12 @@ const ProjectDetail = () => {
               )}
             </div>
           )}
+        </div>
+      </div>
+      <div className="card mt-4">
+        <div className="card-header">Risks and Issues</div>
+        <div className="card-body">
+          <RiskIssuePanel projectId={id} isOwner={isOwner} />
         </div>
       </div>
     </div>

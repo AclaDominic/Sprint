@@ -48,7 +48,6 @@ class TaskController extends Controller
             'priority' => 'required|string|in:low,medium,high,urgent',
             'start_time' => 'nullable|date',
             'due_time' => 'nullable|date',
-            'cost' => 'nullable|numeric',
             'time_spent' => 'nullable|numeric',
         ]);
 
@@ -86,7 +85,6 @@ class TaskController extends Controller
             'due_date' => 'nullable|date',
             'start_time' => 'nullable|date',
             'due_time' => 'nullable|date',
-            'cost' => 'nullable|numeric',
         ]);
 
         // Prevent changing status if already completed
@@ -124,7 +122,7 @@ class TaskController extends Controller
         if ($task->assigned_to !== $user->id && $task->project->user_id !== $user->id) {
             return response()->json(['error' => 'You are not allowed to delete this task.'], 403);
         }
-        
+
         $task->delete();
         return response()->json(['message' => 'Task deleted successfully']);
     }
@@ -148,7 +146,6 @@ class TaskController extends Controller
                 'priority' => $task->priority,
                 'start_time' => $task->start_time,
                 'due_time' => $task->due_time,
-                'cost' => $task->cost,
                 'assignedUser' => $task->assignedUser ? [
                     'id' => $task->assignedUser->id,
                     'name' => $task->assignedUser->name,

@@ -163,7 +163,7 @@ const Registration = () => {
                                 />
                             </div>
 
-                            <div className="mb-3">
+                            <div className="mb-3 d-none">
                                 <select
                                     className="form-select"
                                     value={role}
@@ -174,18 +174,6 @@ const Registration = () => {
                                     <option value="team_member">Team Member</option>
                                     <option value="client">Client</option>
                                 </select>
-                            </div>
-
-                            <div className="mb-3 form-check">
-                                <input
-                                    type="checkbox"
-                                    className="form-check-input"
-                                    id="terms"
-                                    required
-                                />
-                                <label className="form-check-label" htmlFor="terms">
-                                    I agree to the Terms of Service and Privacy Policy
-                                </label>
                             </div>
 
                             <button type="submit" className="btn btn-primary w-100">
