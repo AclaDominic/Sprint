@@ -51,8 +51,18 @@ class TaskController extends Controller
             'time_spent' => 'nullable|numeric',
         ]);
 
-
         $task = Task::create($validated);
+
+        if ($validated['assigned_to']) {
+            ActivityLog::create([
+                'user_id' => $validated['assigned_to'],
+                'project_id' => $task->project_id,
+                'task_id' => $task->id,
+                'action' => 'task_assigned',
+                'description' => 'You were assigned to task "' . $task->title . '"',
+            ]);
+        }
+        
 
         return response()->json(['task' => $task], 201);
     }
@@ -101,15 +111,38 @@ class TaskController extends Controller
             }
         }
 
+        $previousAssignedTo = $task->assigned_to;
+
         $task->update($validated);
 
-        ActivityLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'task_updated',
-            'description' => 'Updated task "' . $task->title . '"',
-            'project_id' => $task->project_id,
-            'task_id' => $task->id,
-        ]);
+        if (
+            isset($validated['assigned_to']) &&
+            $validated['assigned_to'] !== $previousAssignedTo &&
+            $validated['assigned_to'] !== null
+        ) {
+            ActivityLog::create([
+                'user_id' => $validated['assigned_to'],
+                'project_id' => $task->project_id,
+                'task_id' => $task->id,
+                'action' => 'task_reassigned',
+                'description' => 'You were reassigned to task "' . $task->title . '"',
+            ]);
+        }
+
+        if (
+            isset($validated['assigned_to']) &&
+            $validated['assigned_to'] === null &&
+            $previousAssignedTo !== null
+        ) {
+            ActivityLog::create([
+                'user_id' => $previousAssignedTo,
+                'project_id' => $task->project_id,
+                'task_id' => $task->id,
+                'action' => 'task_unassigned',
+                'description' => 'You were unassigned from task "' . $task->title . '"',
+            ]);
+        }
+        
 
         return response()->json(['task' => $task]);
     }
