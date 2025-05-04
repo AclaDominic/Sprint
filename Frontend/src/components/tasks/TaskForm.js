@@ -28,9 +28,9 @@ const TaskForm = () => {
       try {
         const token = localStorage.getItem("token");
         const headers = { Authorization: `Bearer ${token}` };
-  
+
         let resolvedProjectId = projectId;
-  
+
         // If editing, fetch task first to get project_id and assigned info
         if (isEditing) {
           const taskResponse = await axios.get(
@@ -39,7 +39,7 @@ const TaskForm = () => {
           );
           const task = taskResponse.data.task;
           console.log("Fetched task:", task);
-  
+
           setFormData({
             title: task.title,
             description: task.description || "",
@@ -50,10 +50,10 @@ const TaskForm = () => {
             start_time: task.start_time ? task.start_time.slice(0, 16) : "",
             due_time: task.due_time ? task.due_time.slice(0, 16) : "",
           });
-  
+
           resolvedProjectId = task.project_id; // Use actual project_id from task
         }
-  
+
         // Fetch project members
         if (resolvedProjectId) {
           const membersResponse = await axios.get(
@@ -62,16 +62,14 @@ const TaskForm = () => {
           );
           setUsers(membersResponse.data.members);
         }
-  
-        // Fetch all projects for dropdown (only needed for create mode)
-        if (!isEditing) {
-          const projectsResponse = await axios.get(
-            "http://localhost:8000/api/projects",
-            { headers }
-          );
-          setProjects(projectsResponse.data.projects);
-        }
-  
+
+        // Fetch all projects owned by the user
+        const projectsResponse = await axios.get(
+          "http://localhost:8000/api/projects",
+          { headers }
+        );
+        setProjects(projectsResponse.data.projects);
+
         setLoading(false);
       } catch (err) {
         console.error(err);
@@ -79,10 +77,9 @@ const TaskForm = () => {
         setLoading(false);
       }
     };
-  
+
     fetchData();
   }, [taskId, projectId, isEditing]);
-  
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -115,16 +112,24 @@ const TaskForm = () => {
     }
   };
 
-  if (loading) return (
-    <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
-      <div className="text-center">
-        <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
-          <span className="visually-hidden">Loading...</span>
+  if (loading)
+    return (
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ height: "100vh" }}
+      >
+        <div className="text-center">
+          <div
+            className="spinner-border text-primary"
+            role="status"
+            style={{ width: "3rem", height: "3rem" }}
+          >
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <div className="mt-2">Loading Form...</div>
         </div>
-        <div className="mt-2">Loading Form...</div>
       </div>
-    </div>
-  );
+    );
 
   return (
     <div className="task-form">

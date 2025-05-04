@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 
 const RiskIssuePanel = ({ projectId, isOwner }) => {
-  const [issues, setIssues] = useState([]);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activePopover, setActivePopover] = useState(null);
@@ -15,10 +15,28 @@ const RiskIssuePanel = ({ projectId, isOwner }) => {
   });
 
   useEffect(() => {
-    fetchIssues();
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const headers = { Authorization: `Bearer ${token}` };
+        const res = await axios.get(
+          `http://localhost:8000/api/projects/${projectId}/risks-issues`,
+          { headers }
+        );
+        setItems(res.data);
+      } catch (err) {
+        console.error(err.response?.data || err.message);
+        setError("Failed to load risks/issues.");
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchData();
   }, [projectId]);
+  
 
-  const fetchIssues = async () => {
+  const fetchItems = async () => {
     try {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
@@ -26,7 +44,7 @@ const RiskIssuePanel = ({ projectId, isOwner }) => {
         `http://localhost:8000/api/projects/${projectId}/risks-issues`,
         { headers }
       );
-      setIssues(res.data);
+      setItems(res.data);
     } catch (err) {
       console.error(err.response?.data || err.message);
       setError("Failed to load risks/issues.");
@@ -35,16 +53,16 @@ const RiskIssuePanel = ({ projectId, isOwner }) => {
     }
   };
 
-  const handleChangeStatus = async (issue, newStatus) => {
+  const handleChangeStatus = async (item, newStatus) => {
     try {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
       await axios.put(
-        `http://localhost:8000/api/risks-issues/${issue.id}`,
-        { ...issue, status: newStatus },
+        `http://localhost:8000/api/risks-issues/${item.id}`,
+        { ...item, status: newStatus },
         { headers }
       );
-      fetchIssues();
+      fetchItems();
       setActivePopover(null);
     } catch (err) {
       console.error("Failed to update status", err);
@@ -65,7 +83,7 @@ const RiskIssuePanel = ({ projectId, isOwner }) => {
         form,
         { headers }
       );
-      setIssues((prev) => [res.data, ...prev]);
+      setItems((prev) => [res.data, ...prev]);
       setShowModal(false);
       setForm({ type: "issue", title: "", description: "", impact_level: "medium" });
     } catch (err) {
@@ -73,9 +91,9 @@ const RiskIssuePanel = ({ projectId, isOwner }) => {
     }
   };
 
-  const StatusPopover = ({ issue }) => {
+  const StatusPopover = ({ item }) => {
     const popoverRef = useRef(null);
-    const nextStatus = issue.status === "closed" ? "open" : "closed";
+    const nextStatus = item.status === "closed" ? "open" : "closed";
 
     useEffect(() => {
       const handleClickOutside = (event) => {
@@ -95,13 +113,16 @@ const RiskIssuePanel = ({ projectId, isOwner }) => {
       >
         <button
           className="btn btn-sm btn-outline-primary"
-          onClick={() => handleChangeStatus(issue, nextStatus)}
+          onClick={() => handleChangeStatus(item, nextStatus)}
         >
           Change to "{nextStatus}"
         </button>
       </div>
     );
   };
+
+  const risks = items.filter((item) => item.type === "risk");
+  const issues = items.filter((item) => item.type === "issue");
 
   if (loading) return <div>Loading Risks/Issues...</div>;
   if (error) return <div className="alert alert-danger">{error}</div>;
@@ -115,8 +136,53 @@ const RiskIssuePanel = ({ projectId, isOwner }) => {
         </button>
       </div>
       <div className="card-body">
+        {/* RISK TABLE */}
+        <h6 className="mb-3">Risks</h6>
+        {risks.length === 0 ? (
+          <p className="text-muted">No risks reported.</p>
+        ) : (
+          <ul className="list-group mb-4">
+            {risks.map((risk) => (
+              <li
+                key={risk.id}
+                className="list-group-item position-relative d-flex justify-content-between align-items-start flex-column flex-md-row"
+              >
+                <div className="me-3">
+                  <strong>{risk.title}</strong>
+                  <p className="mb-1 text-muted">{risk.description}</p>
+                  <p className="mb-1">
+                    <small className="text-muted">
+                      <strong>Impact:</strong> {risk.impact_level}
+                    </small>
+                  </p>
+                </div>
+                <div className="text-end">
+                  <span
+                    className={`badge bg-${risk.status === "open" ? "danger" : "success"}`}
+                  >
+                    {risk.status}
+                  </span>
+                  {isOwner && (
+                    <button
+                      className="btn btn-sm btn-link ms-2"
+                      onClick={() =>
+                        setActivePopover(activePopover === risk.id ? null : risk.id)
+                      }
+                    >
+                      Change Status
+                    </button>
+                  )}
+                  {activePopover === risk.id && <StatusPopover item={risk} />}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* ISSUE TABLE */}
+        <h6 className="mb-3">Issues</h6>
         {issues.length === 0 ? (
-          <p>No risks or issues reported for this project.</p>
+          <p className="text-muted">No issues reported.</p>
         ) : (
           <ul className="list-group">
             {issues.map((issue) => (
@@ -129,7 +195,7 @@ const RiskIssuePanel = ({ projectId, isOwner }) => {
                   <p className="mb-1 text-muted">{issue.description}</p>
                   <p className="mb-1">
                     <small className="text-muted">
-                      <strong>Type:</strong> {issue.type} | <strong>Impact:</strong> {issue.impact_level}
+                      <strong>Impact:</strong> {issue.impact_level}
                     </small>
                   </p>
                 </div>
@@ -139,17 +205,15 @@ const RiskIssuePanel = ({ projectId, isOwner }) => {
                   >
                     {issue.status}
                   </span>
-                  {(isOwner || issue.type === "issue") && (
-                    <button
-                      className="btn btn-sm btn-link ms-2"
-                      onClick={() =>
-                        setActivePopover(activePopover === issue.id ? null : issue.id)
-                      }
-                    >
-                      Change Status
-                    </button>
-                  )}
-                  {activePopover === issue.id && <StatusPopover issue={issue} />}
+                  <button
+                    className="btn btn-sm btn-link ms-2"
+                    onClick={() =>
+                      setActivePopover(activePopover === issue.id ? null : issue.id)
+                    }
+                  >
+                    Change Status
+                  </button>
+                  {activePopover === issue.id && <StatusPopover item={issue} />}
                 </div>
               </li>
             ))}
@@ -157,6 +221,7 @@ const RiskIssuePanel = ({ projectId, isOwner }) => {
         )}
       </div>
 
+      {/* MODAL */}
       {showModal && (
         <div className="modal show d-block" tabIndex="-1">
           <div className="modal-dialog">
