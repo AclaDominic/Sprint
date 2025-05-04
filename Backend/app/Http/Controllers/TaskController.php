@@ -97,10 +97,15 @@ class TaskController extends Controller
             'due_time' => 'nullable|date',
         ]);
 
-        // Prevent changing status if already completed
-        if ($task->status === 'completed' && $validated['status'] !== 'completed') {
-            return response()->json(['error' => 'Cannot change status of a completed task.'], 400);
+        // Prevent changing status if already completed for non-owner
+        if (
+            $task->status === 'completed' &&
+            $validated['status'] !== 'completed' &&
+            $task->project->user_id !== $user->id
+        ) {
+            return response()->json(['error' => 'Only the project owner can revert a completed task.'], 403);
         }
+        
 
         // Handle time_spent if transitioning to completed
         if ($task->status !== 'completed' && $validated['status'] === 'completed') {

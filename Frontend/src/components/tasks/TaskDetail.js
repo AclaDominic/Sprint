@@ -103,6 +103,9 @@ const TaskDetail = () => {
       setTask({ ...task, status: newStatus });
     } catch (err) {
       setError("Failed to update task status");
+      setTimeout(() => {
+        navigate(-1);
+      }, 2000);
     }
   };
 
